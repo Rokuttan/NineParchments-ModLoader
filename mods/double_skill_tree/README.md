@@ -33,7 +33,7 @@ The purple bars reuse textures the game already has. The game ignores textures w
 ## How to install it in the loader
 
 1. **Get the loader with the mod.** Either:
-   - download this branch: on GitHub, switch the branch selector to **`double-skill-tree`**, then click **Code > Download ZIP**; or
+   - download this branch: on GitHub, switch the branch selector to **`double-skill-tree-MOD`**, then click **Code > Download ZIP**; or
    - download `double_skill_tree-2.5.zip` from the [Releases page](https://github.com/Rokuttan/NineParchments-ModLoader/releases) and extract it into the `mods` folder of an NPModLoader you already have (1.3 or newer), so you get `NPModLoader/mods/double_skill_tree/mod.json`.
 2. **Place the loader.** The `NPModLoader` folder must be inside the game folder, next to `nineparchments_64bit.exe`.
 3. **Check the load order.** Make sure `double_skill_tree` is listed in `load_order.txt` (it already is on this branch; add the line if you copied the mod into another loader).

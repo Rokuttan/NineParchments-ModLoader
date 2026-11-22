@@ -6,7 +6,7 @@ without touching the original game files.
 
 > Not affiliated with or endorsed by Frozenbyte. No game files are included; you need your own copy of the game.
 
-> **This is the `double-skill-tree` branch.** It is the loader plus the
+> **This is the `double-skill-tree-MOD` branch.** It is the loader plus the
 > **[Level cap 276 + double skill tree](mods/double_skill_tree/README.md)** mod. With it, every perk can be upgraded
 > twice (5 → 10 points, with purple bars for the second round), the extra points really apply, and the level cap is
 > raised to 276. See the mod's README for what it does and how to install it. The plain loader is on the `main` branch.
