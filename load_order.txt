@@ -2,3 +2,4 @@
 # To disable a mod, comment its line out with # or set "enabled": false in its mod.json.
 example_mod
 live_tweaks
+double_skill_tree

@@ -1,0 +1,64 @@
+{
+  "name": "Level cap 276 + double skill tree",
+  "version": "2.5",
+  "author": "Rokuttan",
+  "description": "Every perk can be upgraded to twice its points (5 -> 10; 1-point perks such as Everbloom stay at 1). From the 6th point on, the existing bars turn purple. Level cap 276 (enough to fill the biggest tree twice). The original XP curve applies up to level 89; from there to 276 every level costs 22054 XP. Patches the game executable (restored on uninstall). Run make_textures.py once before building.",
+  "enabled": true,
+  "stats": {
+    "CharacterUpgradeManager": {
+      "ExperienceToUpgrade": 1000,
+      "ExperienceCapNormal": 5440227,
+      "ExperienceCapHardcore": 5440227
+    }
+  },
+  "exe_patches": [
+    {
+      "va": "0x1405201d0",
+      "original": "4883ec28448bc2",
+      "patched": "e92b0200009090",
+      "note": "XP per level: redirect the function entry to the code that caps the formula level at 89"
+    },
+    {
+      "va": "0x1405203b0",
+      "original": "40534883ec4041b801000000440f294424108bda4c8bd9450f57c0413bd00f82060200008b05fe46dd02f30f102dc2c0410248897c24500f29742430f30f10354cba4102488d3c85000000000f297c2420440f290c24f3440f100d41b84102904183f801770733c0e98e010000410fb7434e0f57e4ba02000000488d0c87428b0419f3480f2ae00f28dc443bc20f8663010000418d40fe83f8080f8228010000418d40f60f28fcc1e803448d4a02ffc0f3410f59f9448bd08d14c502000000900f57c0418bc1418d49ff0f28d6f3480f2ac1418d49010f28cef30f5ec5f30f5cd00f57c0f3480f2ac0f30f59d7f30f5ec5f30f58d3f30f5cc80f57c0f3480f2ac1418d4902f30f59cf0f28daf30f5ec5f30f58d90f28cef30f5cc80f57c0f3480f2ac1418d4903f30f59cff30f5ec5f30f58d90f28cef30f5cc80f57c0f3480f2ac1418d4904f30f59cff30f5ec5f30f58d90f28cef30f5cc80f57c0f3480f2ac1418d4905f30f59cff30f5ec5f30f58d90f28cef30f5cc80f57c0f3480f2ac1418d49064183c108f30f59cff30f5ec5f30f58d90f28cef30f5cc80f57c0f3480f2ac1f30f59cff30f5ec5f30f58d90f28cef30f5cc8f30f59cff30f58d94983ea010f85f8feffff413bd07329f3410f59e1ffc20f57c08bc20f28cef3480f2ac0f30f5ec5f30f5cc8f30f59ccf30f58d9413bd072dcf3480f2cc38bc00f57c041ffc0f3480f2ac0f3440f58c0443bc30f864afeffff440f280c240f287c24200f28742430488b7c2450f3490f2cc0440f284424104883c4405bc3",
+      "patched": "5356574883ec300f297424204889ce89d30f57f6bf0100000039df771c4889f189fae8f9fdffff89c00f57c0f3480f2ac0f30f58f0ffc7ebe0f3480f2cc60f287424204883c4305f5e5bc3cccccccccc4883ec284189d04183f859760641b859000000e9bffdffffcccccccccccccccc4489f083f801760201c089471c488b5d77e9eaceffffcccccccccccccccccccc4883e0fc4d89e04c0f45c04189d9488d1533e8160283fb05764d8b85f804000039c3750841b905000000eb3b83e80541813876696f6c740c4c8d0535b315024189c1eb234d89c183f803760a83e8034c8d0d42ac15028944242041b803000000488d1571e81602e884f94201e9bfd52d00cccccccccccccccccccccccccccccc8b85f804000083f805760c39c375088d5810e913d52d00e95fd62d00cccccccc41ffc88b05374add024801c1448b4c8b08438d04094139c00f83a9540500488b0c8b4883e1fc4539c87309428b1481e9c2540500418d41ff8b14814489c04429c8031481e9ad540500cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+      "note": "total XP to reach level N = sum of the per-level XP; 0x140520400 caps the formula level at 89; 0x140520420 doubles the perk point maximum (except 1-point perks); 0x140520440/0x1405204c0 choose the bar images (2nd pass = purple layer on top); 0x1405204e0 Manifest Darkness orb count with 6-10 points. Source: asm/patch.s"
+    },
+    {
+      "va": "0x14051d318",
+      "original": "4489771c488b5d77",
+      "patched": "e903310000909090",
+      "note": "skill tree: when building the perk list, store the doubled point maximum (5 -> 10; 1 stays 1)"
+    },
+    {
+      "va": "0x14051d586",
+      "original": "05",
+      "patched": "0a",
+      "note": "add point: hardcoded limit of 5 points per perk -> 10 (each perk's own maximum still applies)"
+    },
+    {
+      "va": "0x1407fda56",
+      "original": "4883e0fc4d8bc44c0f45c0448bcb488d151d12e901e8c0231501",
+      "patched": "e9e529d2ff909090909090909090909090909090909090909090",
+      "note": "skill tree: bar image name; with 6+ points draw <color>05, then the purple layer for the first k segments"
+    },
+    {
+      "va": "0x1407fdb32",
+      "original": "83fb010f87a5feffff",
+      "patched": "e98929d2ff90909090",
+      "note": "skill tree: end of the bar drawing loop; with 6+ points draw a second time (the purple layer)"
+    },
+    {
+      "va": "0x140514cf7",
+      "original": "76",
+      "patched": "eb",
+      "note": "perk effect: do not clamp the applied points to MaxPointsSet (5), so the effect keeps growing up to 10 (the point limit is still enforced when adding points)"
+    },
+    {
+      "va": "0x140575994",
+      "original": "41ffc88b0583f5d702",
+      "patched": "e947abfaff90909090",
+      "note": "Manifest Darkness: the SpawnAmounts table only has 5 rows; with 6-10 points use last row + row (points-5) instead of failing and spawning nothing"
+    }
+  ]
+}
