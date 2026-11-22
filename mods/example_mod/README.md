@@ -103,7 +103,7 @@ texture works, but a texture with a **new** name is not loaded. Reuse an existin
 
 The loader decides by itself:
 - **Only texts, UI, textures, sounds:** *visual* mod, goes into `patch90.fbq`. Achievements keep working.
-- **Stats, scripts, executable patches or other files:** *gameplay* mod, goes into `modpack.fbq` (needs `-mod=modpack.fbq`). Achievements are **disabled**, and in online co-op everyone needs the same `modpack.fbq`.
+- **Stats, scripts, executable patches or other files:** *gameplay* mod. In co-op mode (the default `build`) it also goes into `patch90.fbq`, and in online co-op every player needs the same `patch90.fbq`. In classic mode (`build --modpack`) it goes into `modpack.fbq`: that needs `-mod=modpack.fbq`, and achievements are **disabled**.
 
 ## Staves: in-game name → objects
 

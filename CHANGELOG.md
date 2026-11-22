@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.3
+
+- Co-op mode is now the default and part of the loader: `build` puts every mod into `patch90.fbq`, which the game loads by
+  itself. No `-mod=` launch option and nothing extra to download. Every player in online co-op needs the same `patch90.fbq`.
+- The previous two-package behavior is now `build --modpack`. `build --coop` is still accepted (same as `build`).
+- `live` checks for its script in `patch90.fbq` as well as `modpack.fbq`.
+
 ## 1.2
 
 - New `exe_patches` field in `mod.json`: byte patches for `nineparchments_64bit.exe`.

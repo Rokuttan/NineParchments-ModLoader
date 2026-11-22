@@ -2,22 +2,23 @@
 """Nine Parchments mod manager.
 
 Each mod is a folder in ./mods with a mod.json file (see mods/example_mod/README.md).
-The loader merges every active mod, in the order of load_order.txt, and builds up to two packages:
+The loader merges every active mod, in the order of load_order.txt.
 
+Default (co-op mode): everything goes into patch90.fbq, which the game loads by itself.
+                -> no launch option needed, works in online co-op
+                -> every player must install the SAME patch90.fbq
+                -> achievements are not disabled
+With "build --modpack" (classic mode) it builds up to two packages:
   modpack.fbq   GAMEPLAY mods (stats, scripts, missions...).
                 Loaded with the launch option  -mod=modpack.fbq
                 -> achievements DISABLED (modAchievementsEnabled = false)
                 -> online co-op only with players who have the SAME modpack.fbq
   patch90.fbq   VISUAL / client-side mods (text, UI, textures, audio, shaders).
-                Loaded automatically by the game, no launch option needed
-                -> achievements keep working
-                -> not part of the online co-op mod check
 
 Commands:
   modloader.py list                 lists the mods, their category and conflicts
-  modloader.py build                builds the packages in ./build/modloader
-  modloader.py build --coop         EXPERIMENTAL: puts everything (stats, scripts...) in patch90.fbq,
-                                    without -mod=, to play online co-op with gameplay mods
+  modloader.py build                builds patch90.fbq in ./build/modloader (co-op mode, the default)
+  modloader.py build --modpack      classic mode: gameplay mods go into modpack.fbq (needs -mod=modpack.fbq)
   modloader.py install [--yes]      installs the built packages into the game folder
   modloader.py uninstall            removes everything the loader installed
   modloader.py status
@@ -43,7 +44,7 @@ from typedb import TypeDB  # noqa: E402
 from luachunk import Chunk  # noqa: E402
 import locale_regen  # noqa: E402
 
-VERSION = '1.2'
+VERSION = '1.3'
 GAME_EXE = 'nineparchments_64bit.exe'
 
 
@@ -73,8 +74,8 @@ OUT = os.path.join(HERE, 'build', 'modloader')
 MANIFEST = os.path.join(OUT, 'installed.json')
 
 COOP_INFO = '''
-CO-OP MODE (experimental): everything went into patch90.fbq, which the game loads by itself.
-  • REMOVE  -mod=modpack.fbq  from the Steam launch options.
+CO-OP MODE (default): everything went into patch90.fbq, which the game loads by itself.
+  • No launch option is needed. If  -mod=modpack.fbq  is in the Steam launch options, REMOVE it.
   • EVERY player must install the SAME patch90.fbq (copy the build/modloader folder
     or the patch90.fbq file into each player's game folder). If only one player has the mod,
     values differ between the computers and the game may desync.
@@ -798,7 +799,8 @@ def cmd_list():
     for m in inactive:
         print(f'[inactive] {m.id}  —  {m.name} v{m.version}')
     if any(m.category == GAMEPLAY for m in active):
-        print('\nGameplay mods are active: achievements will be disabled and online co-op will require the same modpack.')
+        print('\nGameplay mods are active: in online co-op every player needs the same patch90.fbq'
+              ' (or the same modpack.fbq with "build --modpack").')
 
 
 def status():
@@ -845,8 +847,19 @@ def _live_show(wait=0):
 
 
 def _live_installed():
-    """True/False whether the installed modpack.fbq contains the live script; None if there is no modpack."""
-    path = os.path.join(GAME, 'modpack.fbq')
+    """True/False whether an installed package (modpack.fbq or patch90.fbq) contains the live script;
+    None if neither exists."""
+    found = None
+    for name in (MODPACK, CLIENT_PATCH):
+        r = _live_in(os.path.join(GAME, name))
+        if r:
+            return True
+        if r is False:
+            found = False
+    return found
+
+
+def _live_in(path):
     if not os.path.exists(path):
         return None
     try:
@@ -864,8 +877,8 @@ def cmd_live(a):
         print(__doc__); return 2
     inst = _live_installed()
     if not inst:
-        print('WARNING: the modpack.fbq installed in the game ' + ('does not exist' if inst is None else 'does not contain the live_tweaks mod') +
-              '.\n         Enable it in its mod.json, run "python3 modloader.py build" and "install", and start the game with -mod=modpack.fbq.')
+        print('WARNING: the mod packages installed in the game ' + ('do not exist' if inst is None else 'do not contain the live_tweaks mod') +
+              '.\n         Enable it in its mod.json, then run "python3 modloader.py build" and "install".')
     sub = a[2]
     lines = [l for l in _live_lines() if l.strip()]
     if sub in ('set', 'unset'):
@@ -929,9 +942,9 @@ def main(a):
         if not active:
             print('no active mods')
             return 1
-        coop = '--coop' in a
+        coop = '--modpack' not in a     # co-op mode is the default; "--coop" is still accepted
         b = Builder(active, coop=coop)
-        print(f'building {len(active)} mod(s)' + (' in CO-OP mode (everything in patch90.fbq)' if coop else '') + '...')
+        print(f'building {len(active)} mod(s)' + (' in co-op mode (everything in patch90.fbq)' if coop else ' in classic mode (modpack.fbq)') + '...')
         result, gameplay = b.build()
         for w in b.warnings:
             print('WARNING:', w)

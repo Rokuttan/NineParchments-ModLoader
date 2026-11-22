@@ -13,9 +13,17 @@ without touching the original game files.
 - **File replacement** (UI, textures, audio, data) through a mod's `files/` folder.
 - **Lua scripts** that run during the game, plus **live value editing** while the game is running.
 - **Executable patches** (`exe_patches`) for changes that can't be made through game data — see below.
-- **Automatic visual/gameplay split**: visual mods keep achievements working; gameplay mods go into a separate package.
-- **Experimental online co-op mode** (`build --coop`).
+- **Online co-op ready by default**: everything goes into `patch90.fbq`, which the game loads by itself. No launch options, no separate download.
+- **Classic mode** (`build --modpack`): gameplay mods go into a separate `modpack.fbq`, loaded with `-mod=modpack.fbq`.
 - **Safe install/uninstall**: the loader tracks what it installed, refuses to overwrite files it didn't create, and `uninstall` restores everything.
+
+### New in 1.3
+
+- **Co-op mode is now the default and built into the loader.** `build` puts every mod (stats, scripts, texts, textures) into `patch90.fbq`,
+  which the game loads automatically: no `-mod=` launch option and nothing extra to download. It works in online co-op as long as
+  every player installs the same `patch90.fbq`.
+- The previous behavior is still available as `build --modpack`. `build --coop` still works, and now does the same as `build`.
+- `live` (live tweaks) now also finds its script inside `patch90.fbq`.
 
 ### New in 1.2
 
@@ -29,12 +37,13 @@ without touching the original game files.
 
 ## How it works
 
-The game natively loads extra `.fbq` packages. The loader merges every active mod and builds up to two of them:
+The game natively loads extra `.fbq` packages. The loader merges every active mod into one of them:
 
-| Package | Contains | How the game loads it | Achievements |
-|---|---|---|---|
-| `patch90.fbq` | visual / client mods (texts, UI, textures, audio) | automatically | keep working |
-| `modpack.fbq` | gameplay mods (stats, scripts, other files) | launch option `-mod=modpack.fbq` | **disabled** |
+| Mode | Package | Contains | How the game loads it | Achievements |
+|---|---|---|---|---|
+| **co-op (default)** — `build` | `patch90.fbq` | every mod | automatically | not disabled |
+| classic — `build --modpack` | `patch90.fbq` | visual / client mods (texts, UI, textures, audio) | automatically | keep working |
+| | `modpack.fbq` | gameplay mods (stats, scripts, other files) | launch option `-mod=modpack.fbq` | **disabled** |
 
 Original game packages are never modified. The only exception is a mod that uses `exe_patches`: the loader then patches
 `nineparchments_64bit.exe`, keeping a backup. `uninstall` removes everything the loader installed and restores the executable.
@@ -58,19 +67,21 @@ Open a terminal **inside the NPModLoader folder**. On Windows use `modloader.bat
 
 ```
 python modloader.py list        shows the mods and whether each one is visual or gameplay
-python modloader.py build       merges the active mods into packages (build/ folder)
+python modloader.py build       merges the active mods into patch90.fbq (build/ folder)
 python modloader.py install     copies the packages into the game folder
 python modloader.py uninstall   removes everything the loader installed
 python modloader.py status      shows what is installed
 ```
 
-If there are gameplay mods, add this to the game's Steam launch options
-(Properties > General > Launch Options):
+That's it: start the game normally. No launch options are needed. To play without mods, run `uninstall`.
+
+**Classic mode:** `python modloader.py build --modpack` puts gameplay mods into a separate `modpack.fbq`. Then add this to
+the game's Steam launch options (Properties > General > Launch Options):
 
 - Windows: `-mod=modpack.fbq`
 - Linux / Steam Deck (Proton): `%command% -mod=modpack.fbq`
 
-To play without mods, remove that option (or run `uninstall`).
+Remove that option again when you go back to co-op mode or play without mods.
 
 ## Making mods
 
@@ -140,22 +151,17 @@ byte patches for `nineparchments_64bit.exe`:
 - A mod with `exe_patches` counts as a gameplay mod. The patches are applied whether or not the game is started with `-mod=`.
 - Every player in online co-op needs the same patches, the same as with any gameplay mod.
 
-### Online co-op with gameplay mods (experimental)
+### Online co-op with mods
 
-```
-python modloader.py build --coop
-python modloader.py install
-```
-Puts everything (stats, scripts, texts) into `patch90.fbq`, which the game loads by itself. **Remove
-`-mod=modpack.fbq` from the launch options.** The game does not compare this file between players,
-so **every player must install the same `patch90.fbq`** (copy it from `build/modloader/`). If the
-versions differ nobody is warned and each computer may use different values. Achievements are not
-disabled in this mode. This mode has not been fully tested online yet.
+Co-op is the default, so just run `build` and `install`. **Every player must install the same `patch90.fbq`.**
+Copy it from `build/modloader/`, or share the same `mods` folder and `load_order.txt` and let each player build it.
+The game does not compare this file between players: if the versions differ, nobody is warned and each computer
+may use different values. If `-mod=modpack.fbq` is still in your launch options from an older version, remove it.
 
 ## Important notes
 
-- **Achievements:** disabled while the game is started with `-mod=modpack.fbq`, i.e. when there are gameplay mods. Visual-only mods don't disable them.
-- **Online co-op:** with `modpack.fbq`, every player needs the **same** file. Visual mods are not part of the check.
+- **Achievements:** the game only disables them when it is started with `-mod=modpack.fbq` (classic mode with gameplay mods). Co-op mode (default) and visual-only mods don't disable them.
+- **Online co-op:** every player needs the **same** `patch90.fbq` (or, in classic mode, the same `modpack.fbq`).
 - **Saves:** mods that change levels/XP are stored in your save. Back it up first.
 - The game loads displayed text when a level starts: change level or restart the game after installing.
 
