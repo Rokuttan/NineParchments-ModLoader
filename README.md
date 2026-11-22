@@ -22,6 +22,17 @@ without touching the original game files.
 - **Classic mode** (`build --modpack`): gameplay mods go into a separate `modpack.fbq`, loaded with `-mod=modpack.fbq`.
 - **Safe install/uninstall**: the loader tracks what it installed, refuses to overwrite files it didn't create, and `uninstall` restores everything.
 
+### New in 1.4
+
+- **Windows launchers rewritten.** `modloader.bat`:
+  - finds Python 3.8+ reliably (the `py` launcher first, then `python`), skipping the Microsoft Store placeholder;
+  - shows how to install Python when it is missing or too old;
+  - passes the exit code through, so scripts can tell when a command failed;
+  - no longer runs a command twice when it fails.
+- **Double-click helpers for Windows:** `build_and_install.bat`, `uninstall.bat`, `status.bat`.
+- **Safer install/uninstall:** if the game is running (Windows locks its files) or a file is read-only, the loader stops before changing anything and tells you to close the game.
+- `modloader.sh` also finds `python` when there is no `python3`, and checks the Python version.
+
 ### New in 1.3
 
 - **Co-op mode is now the default and built into the loader.** `build` puts every mod (stats, scripts, texts, textures) into `patch90.fbq`,
@@ -63,9 +74,23 @@ Original game packages are never modified. The only exception is a mod that uses
      NPModLoader/        <- this folder
    ```
    In Steam: right-click the game > Manage > Browse local files.
-2. Install **Python 3.8 or newer**. On Linux it is usually already installed; on Windows, get it from python.org and tick "Add Python to PATH".
+2. Install **Python 3.8 or newer**. On Linux it is usually already installed; on Windows, get it from python.org and tick "Add python.exe to PATH". Then, on Windows, double-click `build_and_install.bat` whenever you change your mods.
 
 ## Usage
+
+### Windows: double-click
+
+| File | What it does |
+|---|---|
+| `build_and_install.bat` | builds the active mods and installs them: the usual way to apply your mods |
+| `uninstall.bat` | removes everything the loader installed and restores the game executable |
+| `status.bat` | lists the mods and shows what is installed |
+| `modloader.bat` | shows the help. From a terminal: `modloader.bat <command>` |
+
+**Close the game first.** Windows locks the game files while it runs; the loader then stops and tells you so.
+If Python is missing, the `.bat` files tell you where to get it.
+
+### Command line
 
 Open a terminal **inside the NPModLoader folder**. On Windows use `modloader.bat` instead of
 `python modloader.py`; on Linux, `./modloader.sh` or `python3 modloader.py`.
@@ -174,6 +199,8 @@ may use different values. If `-mod=modpack.fbq` is still in your launch options 
 
 | Message | Fix |
 |---|---|
+| "Python 3.8 or newer was not found" | install Python from python.org and tick "Add python.exe to PATH", then open the window again |
+| "... is in use or read-only" | close the game (and wait for Steam to finish updating or checking files), then try again |
 | "Could not find Nine Parchments" | the NPModLoader folder is not inside the game folder (or set `NINE_PARCHMENTS_DIR`) |
 | "no active mods" | a mod needs `"enabled": true` and must not be commented out in `load_order.txt` |
 | "already exists in the game folder and was not installed by the loader" | another mod already uses `modpack.fbq`/`patch90.fbq`; remove or rename it |
@@ -186,6 +213,7 @@ may use different values. If `-mod=modpack.fbq` is still in your launch options 
 ```
 modloader.py         the loader (command line)
 modloader.bat/.sh    launchers for Windows / Linux
+build_and_install.bat, uninstall.bat, status.bat   Windows double-click helpers
 load_order.txt       mod load order
 CHANGELOG.md         what changed in each version
 mods/example_mod/    commented example mod + modding guide

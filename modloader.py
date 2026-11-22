@@ -44,7 +44,7 @@ from typedb import TypeDB  # noqa: E402
 from luachunk import Chunk  # noqa: E402
 import locale_regen  # noqa: E402
 
-VERSION = '1.3'
+VERSION = '1.4'
 GAME_EXE = 'nineparchments_64bit.exe'
 
 
@@ -640,12 +640,27 @@ def sha(path):
     return hashlib.sha256(open(path, 'rb').read()).hexdigest()
 
 
+def ensure_writable(names):
+    """Stops before changing anything if a file is locked (on Windows: the game is running) or read-only."""
+    for name in names:
+        p = os.path.join(GAME, name)
+        if not os.path.exists(p):
+            continue
+        try:
+            open(p, 'r+b').close()
+        except OSError:
+            raise SystemExit(f'{name} is in use or read-only.\n'
+                             'Close the game (and wait for Steam to finish any update or file check), then try again.')
+
+
 def install(assume_yes):
     info_path = os.path.join(OUT, 'build.json')
     if not os.path.exists(info_path):
         raise SystemExit('run "modloader.py build" first')
     info = json.load(open(info_path))
     man = load_manifest()
+    ensure_writable(list(info['outputs']) + list(man['files']) +
+                    ([GAME_EXE] if info.get('exe_patches') or man.get('exe') else []))
     if MODPACK in info['outputs']:
         print(WARNING_CLI)
         if not assume_yes:
@@ -699,6 +714,7 @@ def remove_installed(name, man):
 
 def uninstall():
     man = load_manifest()
+    ensure_writable(list(man['files']) + ([GAME_EXE] if man.get('exe') else []))
     for name in list(man['files']):
         remove_installed(name, man)
     if man.get('exe'):
@@ -920,10 +936,11 @@ def cmd_live(a):
 
 
 def main(a):
-    try:  # Windows consoles without UTF-8 must not crash on box-drawing characters
-        sys.stdout.reconfigure(errors='replace')
-    except AttributeError:
-        pass
+    for stream in (sys.stdout, sys.stderr):
+        try:  # Windows consoles without UTF-8 must not crash on box-drawing characters
+            stream.reconfigure(errors='replace')
+        except AttributeError:
+            pass
     if len(a) < 2:
         print(__doc__)
         return 2
@@ -979,4 +996,6 @@ def main(a):
 
 
 if __name__ == '__main__':
+    if sys.version_info < (3, 8):
+        sys.exit('NPModLoader needs Python 3.8 or newer (this is %d.%d).' % sys.version_info[:2])
     sys.exit(main(sys.argv))

@@ -1,5 +1,18 @@
 # Changelog
 
+## 1.4
+
+- Rewritten `modloader.bat`:
+  - reliable Python 3.8+ detection (`py -3`, then `python`; skips the Microsoft Store placeholder);
+  - clear message when Python is missing or too old;
+  - exit code passed through;
+  - fixed a command running twice when it failed.
+- New Windows double-click helpers: `build_and_install.bat`, `uninstall.bat`, `status.bat`.
+- `install`/`uninstall` stop before changing anything if a file is locked (game running) or read-only.
+- `modloader.sh` falls back to `python` and checks the Python version.
+- Python version check and UTF-8-safe error output in `modloader.py`.
+- `.gitattributes` keeps Windows line endings in `.bat` files.
+
 ## 1.3
 
 - Co-op mode is now the default and part of the loader: `build` puts every mod into `patch90.fbq`, which the game loads by
