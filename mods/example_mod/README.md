@@ -23,6 +23,7 @@ mods/my_mod/
 | `stats` | changes game values (damage, charges, cooldown, staff bonuses, XP...) |
 | `text` | changes names and descriptions |
 | `scripts` | Lua scripts that run during the game |
+| `exe_patches` | byte patches for the game executable, for changes the data can't make (see the main README) |
 
 ### stats
 
@@ -95,11 +96,14 @@ The game uses **Lua 5.1**. Game API calls that are known to work:
 Any file in `files/<game path>` replaces the original. Example:
 `files/data/gui/...`. Extract the original with `extract`, edit it and put it here.
 
+Textures: the game only loads textures listed in its resource list (`resources.bin`). Replacing an existing
+texture works, but a texture with a **new** name is not loaded. Reuse an existing name instead.
+
 ## Visual or gameplay?
 
 The loader decides by itself:
 - **Only texts, UI, textures, sounds:** *visual* mod, goes into `patch90.fbq`. Achievements keep working.
-- **Stats, scripts or other files:** *gameplay* mod, goes into `modpack.fbq` (needs `-mod=modpack.fbq`). Achievements are **disabled**, and in online co-op everyone needs the same `modpack.fbq`.
+- **Stats, scripts, executable patches or other files:** *gameplay* mod, goes into `modpack.fbq` (needs `-mod=modpack.fbq`). Achievements are **disabled**, and in online co-op everyone needs the same `modpack.fbq`.
 
 ## Staves: in-game name → objects
 

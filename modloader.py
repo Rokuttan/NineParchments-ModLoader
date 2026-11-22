@@ -43,7 +43,7 @@ from typedb import TypeDB  # noqa: E402
 from luachunk import Chunk  # noqa: E402
 import locale_regen  # noqa: E402
 
-VERSION = '1.1'
+VERSION = '1.2'
 GAME_EXE = 'nineparchments_64bit.exe'
 
 
@@ -189,6 +189,7 @@ class Mod:
         self.stats = m.get('stats', {})          # {Object: {Property: value | "*1.5" | "+10"}}
         self.text = m.get('text', {})            # {lang|"*": {"key" | "file:key": text}}
         self.scripts = []                        # Lua scripts run on every scene load
+        self.exe_patches = m.get('exe_patches', [])   # [{va, original, patched, note}] in the game executable
         for sc in m.get('scripts', []):
             path = os.path.join(folder, sc)
             if not os.path.isfile(path):
@@ -213,6 +214,8 @@ class Mod:
         for path in self.files:
             if not is_client_path(path):
                 r.append(f'replaces {path}')
+        if self.exe_patches:
+            r.append(f'patches the game executable ({len(self.exe_patches)} span(s))')
         return r
 
     @property
@@ -433,6 +436,10 @@ class Builder:
                     pack_files[name] = (c.dump(), 'loader')
                 self.log(f'  scripts: {", ".join(m.id for m in scripted)} (hooked into scene_loaded_never_skipped.lua)')
 
+        exe_patches = collect_exe_patches(self.mods, self.errors)
+        if exe_patches:
+            self.log(f'  executable: {len(exe_patches)} span(s) will be patched on install')
+
         if self.errors:
             return {}, gameplay   # never build half a package
 
@@ -475,7 +482,8 @@ class Builder:
             self.log(f'  -> {path} ({len(files)} files, SHA-256 {sha[:16]}…)')
         with open(os.path.join(OUT, 'build.json'), 'w') as f:
             json.dump({'outputs': result, 'coop': self.coop, 'gameplay': [m.id for m in gameplay],
-                       'client': [m.id for m in client]}, f, indent=2)
+                       'client': [m.id for m in client], 'exe_patches': _patches_to_json(exe_patches)},
+                      f, indent=2)
         return result, gameplay
 
 
@@ -525,6 +533,96 @@ def resolve_placeholders(text, resolver):
 
 
 # ---------------------------------------------------------------------------------------------
+# Executable patches (exe_patches)
+# ---------------------------------------------------------------------------------------------
+
+EXE_BACKUP = os.path.join(OUT, 'backup', GAME_EXE + '.original')
+
+
+def exe_path():
+    return os.path.join(GAME, GAME_EXE)
+
+
+def va_to_offset(data, va):
+    """Virtual address (as shown by a disassembler, image base 0x140000000) -> file offset."""
+    pe = int.from_bytes(data[0x3c:0x40], 'little')
+    nsec = int.from_bytes(data[pe + 6:pe + 8], 'little')
+    opt = int.from_bytes(data[pe + 20:pe + 22], 'little')
+    base = int.from_bytes(data[pe + 48:pe + 56], 'little')
+    for i in range(nsec):
+        o = pe + 24 + opt + 40 * i
+        vaddr, rsize, rptr = (int.from_bytes(data[o + k:o + k + 4], 'little') for k in (12, 16, 20))
+        if base + vaddr <= va < base + vaddr + rsize:
+            return va - base - vaddr + rptr
+    raise ValueError(f'address {va:#x} is outside the executable')
+
+
+def collect_exe_patches(mods, errors):
+    """Returns [(offset, original, patched, mod)] validated against the current executable."""
+    out = []
+    if not any(m.exe_patches for m in mods):
+        return out
+    data = open(exe_path(), 'rb').read()
+    # original copy (made on the first install): allows replacing spans of an older mod version
+    backup = open(EXE_BACKUP, 'rb').read() if os.path.exists(EXE_BACKUP) else None
+    for m in mods:
+        for p in m.exe_patches:
+            try:
+                off = va_to_offset(data, int(str(p['va']), 16))
+                orig, new = bytes.fromhex(p['original']), bytes.fromhex(p['patched'])
+                if len(orig) != len(new):
+                    raise ValueError('original and patched have different lengths')
+                cur = data[off:off + len(orig)]
+                if cur not in (orig, new) and not (backup and backup[off:off + len(orig)] == orig):
+                    raise ValueError('the bytes in the executable are not the expected ones (different game version?)')
+            except (KeyError, ValueError) as ex:
+                errors.append(f'[{m.id}] exe_patches {p.get("va")}: {ex}')
+                continue
+            for o2, or2, n2, m2 in out:
+                if off < o2 + len(or2) and o2 < off + len(orig):
+                    errors.append(f'[{m.id}] exe_patches {p["va"]}: overlaps a span of "{m2}"')
+            out.append((off, orig, new, m.id))
+    return out
+
+
+def exe_apply(patches, undo=False):
+    """Writes the 'patched' bytes (or the original ones if undo). Returns how many spans changed."""
+    if not patches:
+        return 0
+    path = exe_path()
+    data = bytearray(open(path, 'rb').read())
+    changed = 0
+    for off, orig, new, _ in patches:
+        want, other = (orig, new) if undo else (new, orig)
+        cur = bytes(data[off:off + len(orig)])
+        if cur == want:
+            continue
+        if cur != other:
+            print(f'warning: executable span {off:#x} changed (game update?); left it alone')
+            continue
+        data[off:off + len(orig)] = want
+        changed += 1
+    if changed:
+        if not undo and not os.path.exists(EXE_BACKUP):
+            os.makedirs(os.path.dirname(EXE_BACKUP), exist_ok=True)
+            shutil.copyfile(path, EXE_BACKUP)
+            print('backup of the original executable:', EXE_BACKUP)
+        with open(path + '.tmp', 'wb') as f:
+            f.write(data)
+        shutil.copymode(path, path + '.tmp')
+        os.replace(path + '.tmp', path)
+    return changed
+
+
+def _patches_from_json(lst):
+    return [(p['offset'], bytes.fromhex(p['original']), bytes.fromhex(p['patched']), p['mod']) for p in lst]
+
+
+def _patches_to_json(lst):
+    return [{'offset': o, 'original': a.hex(), 'patched': b.hex(), 'mod': m} for o, a, b, m in lst]
+
+
+# ---------------------------------------------------------------------------------------------
 # Installing
 # ---------------------------------------------------------------------------------------------
 
@@ -567,6 +665,14 @@ def install(assume_yes):
         os.replace(dst + '.tmp', dst)
         man['files'][name] = sha(dst)
         print('installed:', dst)
+    # executable: undo spans from old builds that are gone, apply the new ones
+    new_p = _patches_from_json(info.get('exe_patches', []))
+    old_p = [p for p in _patches_from_json(man.get('exe', [])) if p[:3] not in [q[:3] for q in new_p]]
+    if old_p:
+        print(f'executable: {exe_apply(old_p, undo=True)} old span(s) restored')
+    if new_p:
+        print(f'executable: {exe_apply(new_p)} span(s) patched ({len(new_p)} in total)')
+    man['exe'] = _patches_to_json(new_p)
     save_manifest(man)
     if info.get('coop'):
         print(COOP_INFO)
@@ -594,6 +700,10 @@ def uninstall():
     man = load_manifest()
     for name in list(man['files']):
         remove_installed(name, man)
+    if man.get('exe'):
+        n = exe_apply(_patches_from_json(man['exe']), undo=True)
+        print(f'executable: {n} span(s) restored to the original')
+        man['exe'] = []
     save_manifest(man)
     print('Remember to remove "-mod=modpack.fbq" from the Steam launch options, if it is there.')
 
@@ -693,7 +803,12 @@ def cmd_list():
 
 def status():
     man = load_manifest()
-    if not man['files']:
+    if man.get('exe'):
+        data = open(exe_path(), 'rb').read()
+        ok = sum(data[o:o + len(a)] == b for o, a, b, _ in _patches_from_json(man['exe']))
+        print(f'{GAME_EXE}: {ok}/{len(man["exe"])} spans patched ' + ('ok' if ok == len(man['exe']) else
+              '(run install again: Steam probably restored the file)'))
+    if not man['files'] and not man.get('exe'):
         print('nothing installed')
     for name, h in man['files'].items():
         p = os.path.join(GAME, name)

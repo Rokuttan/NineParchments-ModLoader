@@ -6,6 +6,27 @@ without touching the original game files.
 
 > Not affiliated with or endorsed by Frozenbyte. No game files are included; you need your own copy of the game.
 
+## Features
+
+- **Stat changes** for spells, staves, perks, XP and levels (`stats`), with absolute values or `*1.5` / `+10` modifiers; tooltips are regenerated to match the new values.
+- **Text changes** (names, descriptions) per language.
+- **File replacement** (UI, textures, audio, data) through a mod's `files/` folder.
+- **Lua scripts** that run during the game, plus **live value editing** while the game is running.
+- **Executable patches** (`exe_patches`) for changes that can't be made through game data — see below.
+- **Automatic visual/gameplay split**: visual mods keep achievements working; gameplay mods go into a separate package.
+- **Experimental online co-op mode** (`build --coop`).
+- **Safe install/uninstall**: the loader tracks what it installed, refuses to overwrite files it didn't create, and `uninstall` restores everything.
+
+### New in 1.2
+
+- **`exe_patches` in `mod.json`**: a mod can now patch bytes in `nineparchments_64bit.exe` (addresses as shown by a disassembler).
+  - Every patch is **validated before building**: the current bytes must match `original` (or `patched`), so a mod made for another game version fails with a clear error instead of corrupting the game.
+  - Patches from different mods that **overlap** are reported as conflicts.
+  - On the first patch the loader keeps a **backup of the original executable** (`build/modloader/backup/`).
+  - `install` applies the patches; **reinstalling a newer version of a mod** first restores the spans it no longer uses, then applies the new ones.
+  - `uninstall` **restores the original bytes**, and `status` shows how many patched spans are still applied (a Steam update or "Verify integrity of game files" restores the executable; just run `install` again).
+  - `list` flags mods that patch the executable.
+
 ## How it works
 
 The game natively loads extra `.fbq` packages. The loader merges every active mod and builds up to two of them:
@@ -15,7 +36,8 @@ The game natively loads extra `.fbq` packages. The loader merges every active mo
 | `patch90.fbq` | visual / client mods (texts, UI, textures, audio) | automatically | keep working |
 | `modpack.fbq` | gameplay mods (stats, scripts, other files) | launch option `-mod=modpack.fbq` | **disabled** |
 
-Original game files are never modified. `uninstall` removes everything the loader installed.
+Original game packages are never modified. The only exception is a mod that uses `exe_patches`: the loader then patches
+`nineparchments_64bit.exe`, keeping a backup. `uninstall` removes everything the loader installed and restores the executable.
 
 ## Installation
 
@@ -94,6 +116,30 @@ python modloader.py live clear     (restores everything)
 ```
 Changes are lost when the game closes. Once you find the right value, put it in `stats` in your mod.
 
+### Executable patches (`exe_patches`)
+
+Some changes live in the game's code, not in its data (for example, a hardcoded limit). For those, a mod can list
+byte patches for `nineparchments_64bit.exe`:
+
+```json
+"exe_patches": [
+  {
+    "va": "0x14051d586",
+    "original": "05",
+    "patched": "0a",
+    "note": "what this patch does"
+  }
+]
+```
+
+- `va`: virtual address of the first byte, as shown by a disassembler (image base `0x140000000`).
+- `original` / `patched`: hex bytes, same length. The build fails if the executable contains neither.
+- Longer code can go in unused padding (`int3`/`0xCC` bytes) and be reached with a `jmp`; the loader just writes bytes.
+- Patches only target **Nine Parchments v1.1.0 (build 4722)**.
+- The loader backs up the original executable on the first patch, and `uninstall` restores it.
+- A mod with `exe_patches` counts as a gameplay mod. The patches are applied whether or not the game is started with `-mod=`.
+- Every player in online co-op needs the same patches, the same as with any gameplay mod.
+
 ### Online co-op with gameplay mods (experimental)
 
 ```
@@ -120,6 +166,8 @@ disabled in this mode. This mode has not been fully tested online yet.
 | "Could not find Nine Parchments" | the NPModLoader folder is not inside the game folder (or set `NINE_PARCHMENTS_DIR`) |
 | "no active mods" | a mod needs `"enabled": true` and must not be commented out in `load_order.txt` |
 | "already exists in the game folder and was not installed by the loader" | another mod already uses `modpack.fbq`/`patch90.fbq`; remove or rename it |
+| "the bytes in the executable are not the expected ones" | the `exe_patches` were made for another game version, or another tool changed the executable |
+| `status` shows fewer patched spans than expected | Steam restored the executable (update or file check): run `install` again |
 | script doesn't run | check `log/nineparchments.log` in the game folder (`[modloader]` lines) and whether `np_modloader.txt` was created |
 
 ## Repository layout
@@ -128,6 +176,7 @@ disabled in this mode. This mode has not been fully tested online yet.
 modloader.py         the loader (command line)
 modloader.bat/.sh    launchers for Windows / Linux
 load_order.txt       mod load order
+CHANGELOG.md         what changed in each version
 mods/example_mod/    commented example mod + modding guide
 mods/live_tweaks/    live value editing while the game runs
 tools/               file format libraries, also usable on their own:
