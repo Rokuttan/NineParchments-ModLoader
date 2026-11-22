@@ -1,0 +1,4 @@
+# Load order: mods further down win conflicts.
+# To disable a mod, comment its line out with # or set "enabled": false in its mod.json.
+example_mod
+live_tweaks

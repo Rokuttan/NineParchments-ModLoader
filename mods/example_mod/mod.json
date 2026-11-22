@@ -1,0 +1,30 @@
+{
+  "name": "Example mod",
+  "version": "1.0",
+  "author": "NPModLoader",
+  "description": "Shows everything a mod can do: change stats, change texts and run a script. Read README.md in this folder.",
+  "enabled": false,
+
+  "stats": {
+    "FireballProjectileSpellComponent": {
+      "BasePower": "*1.5",
+      "MaxStacks": "+2",
+      "RestoreStackTime": 3.0
+    },
+    "ApprenticeVariant1StaffUpgradeFeatureComponent": {
+      "AffectFactor1": 0.3
+    }
+  },
+
+  "text": {
+    "en": {
+      "menu/spells:namefireball": "Small Fireball+",
+      "menu/items:statsApprenticeStaff": "+30% spell charges"
+    },
+    "*": {
+      "menu/items:ApprenticeStaff": "Cornelius's Staff+"
+    }
+  },
+
+  "scripts": ["example.lua"]
+}

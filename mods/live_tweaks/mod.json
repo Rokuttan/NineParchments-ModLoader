@@ -1,0 +1,8 @@
+{
+  "name": "Live tweaks",
+  "version": "1.0",
+  "author": "NPModLoader",
+  "description": "Changes spell stats (or any type in types.bin) while the game is running, by re-reading np_live.txt in the game folder every half second. Use: python3 modloader.py live set Object.Property value",
+  "enabled": false,
+  "scripts": ["live.lua"]
+}
