@@ -1,6 +1,6 @@
 # Level cap 276 + double skill tree
 
-A mod for **Nine Parchments v1.1.0 (build 4722)**, made for [NPModLoader](../../README.md) 1.3 or newer.
+A mod for **Nine Parchments v1.1.0 (build 4722)**, made for [NPModLoader](../../README.md) 1.3 or newer (1.4+ for the Windows double-click files).
 
 ## What it does
 
@@ -37,23 +37,25 @@ The purple bars reuse textures the game already has. The game ignores textures w
    - download `double_skill_tree-2.5.zip` from the [Releases page](https://github.com/Rokuttan/NineParchments-ModLoader/releases) and extract it into the `mods` folder of an NPModLoader you already have (1.3 or newer), so you get `NPModLoader/mods/double_skill_tree/mod.json`.
 2. **Place the loader.** The `NPModLoader` folder must be inside the game folder, next to `nineparchments_64bit.exe`.
 3. **Check the load order.** Make sure `double_skill_tree` is listed in `load_order.txt` (it already is on this branch; add the line if you copied the mod into another loader).
-4. **Generate the textures** (once). Open a terminal in the `NPModLoader` folder and run:
+4. **Close the game**, then generate the textures and install. You need Python 3.8 or newer.
+
+   **Windows (double-click):**
+   1. `NPModLoader\mods\double_skill_tree\make_textures.bat`, once.
+   2. `NPModLoader\build_and_install.bat`.
+
+   **Linux / Steam Deck, or a terminal on Windows** (in the `NPModLoader` folder; use `python3` on Linux):
    ```
    python mods/double_skill_tree/make_textures.py
-   ```
-   Use `python3` on Linux.
-5. **Build and install:**
-   ```
    python modloader.py build
    python modloader.py install
    ```
-6. **Start the game normally.** No launch options are needed.
+5. **Start the game normally.** No launch options are needed.
 
-To remove it, run `python modloader.py uninstall`. That removes the package and restores the original executable.
+To remove it, double-click `uninstall.bat` (or run `python modloader.py uninstall`). That removes the package and restores the original executable. `status.bat` shows whether the patches are applied.
 
 ### Notes
 
 - **Saves:** levels and points are stored in your save. Back up your save before using the mod. If you uninstall the mod later, a character with more than 5 points in a perk or above the normal level cap may behave unexpectedly.
 - **Online co-op:** every player needs the same mod, installed the same way. The loader's default mode puts everything into `patch90.fbq`.
-- **Steam updates:** a Steam update or "Verify integrity of game files" restores the original executable. Run `python modloader.py install` again. `python modloader.py status` shows whether the patches are applied.
+- **Steam updates:** a Steam update or "Verify integrity of game files" restores the original executable. Run `build_and_install.bat` (or `python modloader.py install`) again. `python modloader.py status` shows whether the patches are applied.
 - **Other game versions:** if your game is not v1.1.0 (build 4722), `build` stops with *"the bytes in the executable are not the expected ones"* and nothing is changed.

@@ -95,7 +95,7 @@ def main():
         with open(os.path.join(out_dir, f'skill_icon_{name}.fbi'), 'wb') as f:
             f.write(write_fbi(b[:HDR], raw))
     print(f'{len(OUT_NAMES)} textures written to {out_dir}')
-    print('Now run: modloader.py build  and  modloader.py install')
+    print('Now run build_and_install.bat (Windows) or: modloader.py build  and  modloader.py install')
 
 
 if __name__ == '__main__':
