@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.4.1
+
+- Docs: new "Antivirus warnings" section in the README (false positives on the patched game executable: how to allow it
+  in Windows Defender and other antivirus programs, and how to recover a quarantined executable). No code changes.
+
 ## 1.4
 
 - Rewritten `modloader.bat`:

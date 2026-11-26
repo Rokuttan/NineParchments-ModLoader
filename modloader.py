@@ -44,7 +44,7 @@ from typedb import TypeDB  # noqa: E402
 from luachunk import Chunk  # noqa: E402
 import locale_regen  # noqa: E402
 
-VERSION = '1.4'
+VERSION = '1.4.1'
 GAME_EXE = 'nineparchments_64bit.exe'
 
 

@@ -17,6 +17,10 @@ without touching the original game files.
 - **Classic mode** (`build --modpack`): gameplay mods go into a separate `modpack.fbq`, loaded with `-mod=modpack.fbq`.
 - **Safe install/uninstall**: the loader tracks what it installed, refuses to overwrite files it didn't create, and `uninstall` restores everything.
 
+### New in 1.4.1
+
+- New [Antivirus warnings](#antivirus-warnings) section: what to do if your antivirus flags the patched game executable.
+
 ### New in 1.4
 
 - **Windows launchers rewritten.** `modloader.bat`:
@@ -201,7 +205,22 @@ may use different values. If `-mod=modpack.fbq` is still in your launch options 
 | "already exists in the game folder and was not installed by the loader" | another mod already uses `modpack.fbq`/`patch90.fbq`; remove or rename it |
 | "the bytes in the executable are not the expected ones" | the `exe_patches` were made for another game version, or another tool changed the executable |
 | `status` shows fewer patched spans than expected | Steam restored the executable (update or file check): run `install` again |
+| antivirus blocked or deleted the game executable | see [Antivirus warnings](#antivirus-warnings) |
 | script doesn't run | check `log/nineparchments.log` in the game folder (`[modloader]` lines) and whether `np_modloader.txt` was created |
+
+## Antivirus warnings
+
+Some antivirus programs flag the **patched `nineparchments_64bit.exe`** (or `python.exe` while it writes to it). This is a false positive: mods with `exe_patches` add a little code to the game executable, and that looks suspicious to heuristic scanners. The loader is plain Python and its source code is in this repository. The original executable is kept in `build/modloader/backup/`, and `uninstall` restores it.
+
+**Windows Security (Defender)**
+1. **Restore the blocked file:** Windows Security > Virus & threat protection > **Protection history** > click the entry > Actions > **Allow on device** (or **Restore** if it is in quarantine).
+2. **Stop it from happening again:** Virus & threat protection > Manage settings > **Exclusions** > Add or remove exclusions > Add an exclusion > **Folder**, and pick the game folder (e.g. `C:\Program Files (x86)\Steam\steamapps\common\Nine Parchments`).
+
+**Other antivirus programs** (Avast, AVG, Kaspersky, Norton, Bitdefender...): restore the file from **Quarantine** / Virus Chest, then add the game folder to **Exceptions** / Exclusions. If there is a "behavior shield" or similar feature, also allow `python.exe`.
+
+Excluding only the game folder is safer than turning the antivirus off.
+
+**If the executable was deleted or quarantined:** in Steam, right-click the game > Properties > Installed Files > **Verify integrity of game files** to get the original back. Add the exclusion first, then run `install` (or `build_and_install.bat`) again.
 
 ## Repository layout
 
